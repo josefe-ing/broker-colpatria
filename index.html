@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+<title>BrokerAPP — Constructora Colpatria</title>
+<meta name="description" content="Plataforma de micro-brokers VIS - Constructora Colpatria" />
+<meta name="theme-color" content="#7A1F3D" />
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>" />
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.23.9/babel.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  html, body { height:100%; overflow:hidden; }
+  body { font-family:'DM Sans',sans-serif; background:#E8E4DF; }
+  input:focus, select:focus { border-color:#7A1F3D !important; outline:none; }
+  ::-webkit-scrollbar { width:0; background:transparent; }
+  @media (max-width: 430px) {
+    body { background:#F7F5F2; }
+  }
+</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+const { useState, useEffect } = React;
+
+const C = {
+  wine: "#7A1F3D", wineDark: "#5C1730", wineLight: "#F9EEF2",
+  red: "#E8344E", redSoft: "#FDE8EC",
+  green: "#22C55E", greenSoft: "#DCFCE7",
+  amber: "#F59E0B", amberSoft: "#FEF3C7",
+  blue: "#3B82F6", blueSoft: "#DBEAFE",
+  bg: "#F7F5F2", card: "#FFFFFF", cardAlt: "#FAF8F6",
+  text: "#1A1A2E", textSec: "#6B7280", textTer: "#9CA3AF",
+  border: "#E8E4DF", borderLight: "#F0ECE8",
+  shadow: "0 2px 12px rgba(26,26,46,0.06)",
+  shadowLg: "0 8px 32px rgba(122,31,61,0.12)",
+};
+
+const PROJECTS = [
+  { id:1, name:"Villa del Sol", location:"Soacha, Cundinamarca", price:"Desde $135M", type:"Apartamentos VIS", units:320, subsidio:"Mi Casa Ya", img:"🌇", color:"#E8344E", area:"42-58 m²", rooms:"2-3 hab", delivery:"Jun 2027", certified:true, selected:true,
+    features:["Zonas verdes","Parque infantil","Salón comunal","Vigilancia 24h","Cerca a TransMilenio"],
+    financing:"Cuota inicial desde $6.7M. Subsidio Mi Casa Ya hasta $30M. Crédito hipotecario hasta 20 años." },
+  { id:2, name:"Parques de Bolívar", location:"Bello, Antioquia", price:"Desde $128M", type:"Apartamentos VIS", units:450, subsidio:"Mi Casa Ya", img:"🏘️", color:"#3B82F6", area:"38-52 m²", rooms:"2-3 hab", delivery:"Mar 2027", certified:true, selected:true,
+    features:["Piscina","Gimnasio","BBQ","Parqueadero visitantes","Portería"],
+    financing:"Cuota inicial desde $6.4M. Subsidio Mi Casa Ya + Semillero de Propietarios. Crédito hasta 20 años." },
+  { id:3, name:"Alameda del Río", location:"Barranquilla, Atlántico", price:"Desde $118M", type:"Casas VIS", units:180, subsidio:"Mi Casa Ya + Semillero", img:"🏡", color:"#22C55E", area:"52-68 m²", rooms:"2-3 hab", delivery:"Sep 2027", certified:false, selected:false,
+    features:["Casa con patio","Zonas verdes","Cancha múltiple","Cerca a centros comerciales"],
+    financing:"Cuota inicial desde $5.9M. Doble subsidio disponible. Crédito hasta 20 años." },
+  { id:4, name:"Mirador del Norte", location:"Valledupar, Cesar", price:"Desde $105M", type:"Apartamentos VIS", units:240, subsidio:"Mi Casa Ya + Semillero", img:"🌄", color:"#F59E0B", area:"40-55 m²", rooms:"2-3 hab", delivery:"Dic 2027", certified:false, selected:false,
+    features:["Vista a la Sierra Nevada","Zonas húmedas","Salón de eventos","Cicloruta"],
+    financing:"Cuota inicial desde $5.2M. Doble subsidio. Crédito hasta 20 años." },
+];
+
+const MOCK_LEADS = [
+  { id:1, name:"María González", phone:"318 456 7890", project:"Villa del Sol", status:"visita_agendada", date:"Hace 5 días", nextVisit:"Sábado 19 abril, 10am", comision:800000, auto:false },
+  { id:2, name:"Carlos Pérez", phone:"301 234 5678", project:"Villa del Sol", status:"contactado", date:"Hace 2 días", comision:800000, auto:false },
+  { id:3, name:"Ana Ruiz", phone:"315 876 5432", project:"Parques de Bolívar", status:"credito_aprobado", date:"Hace 3 semanas", comision:750000, auto:false },
+  { id:4, name:"Jorge Medina", phone:"320 111 2233", project:"Villa del Sol", status:"registrado", date:"Hace 1 día", comision:800000, auto:true },
+];
+
+const STATUS_MAP = {
+  registrado:{ label:"Registrado", color:C.textSec, bg:"#F3F4F6", step:0 },
+  contactado:{ label:"Contactado", color:C.blue, bg:C.blueSoft, step:1 },
+  visita_agendada:{ label:"Visita agendada", color:C.amber, bg:C.amberSoft, step:2 },
+  visita_realizada:{ label:"Visita realizada", color:C.amber, bg:C.amberSoft, step:3 },
+  documentos:{ label:"Documentos", color:C.wine, bg:C.wineLight, step:4 },
+  credito_tramite:{ label:"Crédito en trámite", color:C.blue, bg:C.blueSoft, step:5 },
+  credito_aprobado:{ label:"Crédito aprobado", color:C.green, bg:C.greenSoft, step:6 },
+  cerrado:{ label:"¡Cerrado!", color:C.green, bg:C.greenSoft, step:7 },
+};
+
+const SUGGESTIONS = {
+  registrado:{ urgency:"red", icon:"🔴", title:"Lead sin contactar", msg:"fue registrado y no ha sido contactado. Escríbele para que sepa que estamos en proceso.", wa:"Hola {name}, soy {broker} de Constructora Colpatria. Hay una oportunidad increíble de vivienda VIS en {project} con subsidio {sub}. ¿Hablamos? 🏠" },
+  contactado:{ urgency:"amber", icon:"🟡", title:"Pendiente seguimiento", msg:"ya fue contactado por Ventas. Hazle follow-up para mantener el interés.", wa:"Hola {name}, ¿pudiste hablar con el asesor de Colpatria sobre {project}? Si tienes dudas, ¡cuenta conmigo! 😊" },
+  visita_agendada:{ urgency:"amber", icon:"🟡", title:"Visita programada", msg:"tiene visita agendada. Confírmale dirección y hora.", wa:"Hola {name}, te recuerdo tu visita al proyecto {project} este {date}. ¡Te va a encantar! 🏠✨" },
+  credito_aprobado:{ urgency:"green", icon:"🟢", title:"¡Crédito aprobado!", msg:"recibió aprobación. ¡Felicítalo!", wa:"Hola {name}, ¡excelente noticia! 🎉 Tu crédito para {project} fue aprobado. ¡Estamos a un paso de tu casa propia!" },
+};
+
+const fmt = n => new Intl.NumberFormat("es-CO",{style:"currency",currency:"COP",maximumFractionDigits:0}).format(n);
+
+// ─── COMPONENTS ───
+const Badge = ({children,color=C.wine,bg,small}) => <span style={{display:"inline-flex",alignItems:"center",padding:small?"2px 8px":"4px 12px",borderRadius:20,fontSize:small?10:11,fontWeight:700,background:bg||`${color}15`,color,letterSpacing:0.3}}>{children}</span>;
+
+const Btn = ({children,onClick,variant="primary",disabled,full,small,style={}}) => {
+  const b = {padding:small?"8px 16px":"14px 24px",borderRadius:14,fontWeight:700,fontSize:small?13:15,cursor:disabled?"not-allowed":"pointer",border:"none",transition:"all 0.2s",fontFamily:"inherit",opacity:disabled?0.4:1,width:full?"100%":"auto",letterSpacing:-0.2};
+  const v = {primary:{...b,background:C.wine,color:"#fff",...style},outline:{...b,background:"transparent",color:C.wine,border:`2px solid ${C.wine}`,...style},ghost:{...b,background:C.wineLight,color:C.wine,...style},success:{...b,background:C.green,color:"#fff",...style},whatsapp:{...b,background:"#25D366",color:"#fff",...style}};
+  return <button onClick={onClick} disabled={disabled} style={v[variant]}>{children}</button>;
+};
+
+const Input = ({label,value,onChange,placeholder,type="text"}) => (
+  <div style={{marginBottom:16}}>
+    {label&&<label style={{display:"block",color:C.textSec,fontSize:12,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:0.8}}>{label}</label>}
+    <input type={type} value={value} onChange={e=>onChange(e.target.value)} placeholder={placeholder}
+      style={{width:"100%",padding:"12px 16px",background:C.cardAlt,border:`1.5px solid ${C.border}`,borderRadius:12,color:C.text,fontSize:15,fontFamily:"inherit",outline:"none",boxSizing:"border-box"}} />
+  </div>
+);
+
+const NavItem = ({icon,label,active,onClick,badge}) => (
+  <div onClick={onClick} style={{display:"flex",flexDirection:"column",alignItems:"center",gap:2,cursor:"pointer",padding:"4px 0",minWidth:56,position:"relative"}}>
+    <span style={{fontSize:22,opacity:active?1:0.45}}>{icon}</span>
+    <span style={{fontSize:10,fontWeight:active?700:500,color:active?C.wine:C.textTer}}>{label}</span>
+    {active&&<div style={{width:4,height:4,borderRadius:2,background:C.wine,marginTop:-1}} />}
+    {badge&&<div style={{position:"absolute",top:-2,right:8,width:16,height:16,borderRadius:8,background:C.red,color:"#fff",fontSize:9,fontWeight:800,display:"flex",alignItems:"center",justifyContent:"center"}}>{badge}</div>}
+  </div>
+);
+
+const QRGrid = ({seed=1}) => (
+  <div style={{width:140,height:140,margin:"0 auto",background:"#fff",borderRadius:12,display:"grid",gridTemplateColumns:"repeat(10,1fr)",gridTemplateRows:"repeat(10,1fr)",gap:1.5,padding:8,border:`1px solid ${C.border}`}}>
+    {Array.from({length:100}).map((_,i)=>{
+      const on = ((i*7+seed*13)%3===0)||((i*11+seed*5)%5===0)||((i<20&&i%2===0))||(i>80&&i%3===0)||(i%10<2)||(i%10>7);
+      return <div key={i} style={{background:on?"#1a1a2e":"#fff",borderRadius:0.5}} />;
+    })}
+  </div>
+);
+
+// ─── ONBOARDING ───
+function OnboardingWelcome({onNext}) {
+  return (
+    <div style={{display:"flex",flexDirection:"column",height:"100%",padding:"0 28px"}}>
+      <div style={{flex:1,display:"flex",flexDirection:"column",justifyContent:"center",alignItems:"center",textAlign:"center"}}>
+        <div style={{width:80,height:80,borderRadius:24,background:`linear-gradient(135deg,${C.wine},${C.red})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:24,boxShadow:C.shadowLg}}>🏠</div>
+        <h1 style={{fontSize:28,fontWeight:800,color:C.text,margin:"0 0 8px",letterSpacing:-0.5,lineHeight:1.2}}>Broker<span style={{color:C.wine}}>APP</span></h1>
+        <p style={{fontSize:13,color:C.textSec,letterSpacing:2,textTransform:"uppercase",fontWeight:600,marginBottom:32}}>Constructora Colpatria</p>
+        <p style={{fontSize:16,color:C.textSec,lineHeight:1.6,maxWidth:280}}>Gana dinero ayudando a familias a conseguir su vivienda propia. Conviértete en micro-broker VIS.</p>
+      </div>
+      <div style={{paddingBottom:40}}>
+        <Btn onClick={onNext} full>Comenzar registro →</Btn>
+        <p style={{textAlign:"center",fontSize:12,color:C.textTer,marginTop:16}}>¿Ya tienes cuenta? <span style={{color:C.wine,fontWeight:600,cursor:"pointer"}}>Inicia sesión</span></p>
+      </div>
+    </div>
+  );
+}
+
+function OnboardingRegister({onNext}) {
+  const [f,sF]=useState({name:"",email:"",phone:"",uni:"",sem:""});
+  return (
+    <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{padding:"16px 20px 0",display:"flex",alignItems:"center",gap:8}}><Badge color={C.wine}>Paso 1 de 3</Badge><span style={{fontSize:13,color:C.textSec}}>Datos básicos</span></div>
+      <div style={{flex:1,padding:"20px 24px",overflowY:"auto"}}>
+        <h2 style={{fontSize:24,fontWeight:800,color:C.text,margin:"0 0 4px",letterSpacing:-0.5}}>Crea tu cuenta</h2>
+        <p style={{fontSize:14,color:C.textSec,margin:"0 0 24px"}}>Únete a la red de micro-brokers Colpatria</p>
+        <Input label="Nombre completo" value={f.name} onChange={v=>sF({...f,name:v})} placeholder="Tu nombre" />
+        <Input label="Email" value={f.email} onChange={v=>sF({...f,email:v})} placeholder="correo@email.com" type="email" />
+        <Input label="Celular" value={f.phone} onChange={v=>sF({...f,phone:v})} placeholder="300 123 4567" type="tel" />
+        <Input label="Universidad" value={f.uni} onChange={v=>sF({...f,uni:v})} placeholder="Tu universidad" />
+        <Input label="Semestre (opcional)" value={f.sem} onChange={v=>sF({...f,sem:v})} placeholder="Ej: 6to" />
+      </div>
+      <div style={{padding:"16px 24px 32px"}}><Btn onClick={onNext} disabled={!f.name||!f.email||!f.phone||!f.uni} full>Continuar →</Btn></div>
+    </div>
+  );
+}
+
+function OnboardingKYC({onNext}) {
+  const [step,setStep]=useState(0);
+  useEffect(()=>{if(step===3){const t=setTimeout(()=>setStep(4),2000);return()=>clearTimeout(t);}},[step]);
+  if(step===3) return <div style={{display:"flex",flexDirection:"column",height:"100%",alignItems:"center",justifyContent:"center",padding:"0 40px",textAlign:"center"}}><div style={{width:64,height:64,borderRadius:32,border:`4px solid ${C.border}`,borderTopColor:C.wine,animation:"spin 1s linear infinite",marginBottom:24}} /><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style><h3 style={{fontSize:18,fontWeight:700,color:C.text,margin:"0 0 8px"}}>Verificando identidad...</h3><p style={{fontSize:14,color:C.textSec}}>Powered by MetaLucky / CashBlock</p></div>;
+  if(step===4) return <div style={{display:"flex",flexDirection:"column",height:"100%",alignItems:"center",justifyContent:"center",padding:"0 40px",textAlign:"center"}}><div style={{width:80,height:80,borderRadius:40,background:C.greenSoft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:24}}>✅</div><h3 style={{fontSize:22,fontWeight:800,color:C.text,margin:"0 0 8px"}}>¡Identidad verificada!</h3><p style={{fontSize:14,color:C.textSec,marginBottom:32}}>Tu cuenta ha sido validada. Ya puedes acceder a la formación.</p><Btn onClick={onNext} full>Ir a la formación →</Btn></div>;
+  const steps=[{icon:"🪪",title:"Verifica tu identidad",desc:"Validamos tu documento para que puedas operar como broker. Proceso seguro, menos de 2 minutos.",btn:"Iniciar verificación"},{icon:"📄",title:"Foto del documento",desc:"Toma una foto clara del frente de tu cédula de ciudadanía.",btn:"📸 Tomar foto"},{icon:"🤳",title:"Selfie de verificación",desc:"Toma una selfie con buena iluminación mirando a la cámara.",btn:"📸 Tomar selfie"}];
+  const st=steps[step];
+  return <div style={{display:"flex",flexDirection:"column",height:"100%"}}><div style={{padding:"16px 20px 0",display:"flex",alignItems:"center",gap:8}}><Badge color={C.wine}>Paso 2 de 3</Badge><span style={{fontSize:13,color:C.textSec}}>Verificación KYC</span></div><div style={{flex:1,display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",padding:"0 32px",textAlign:"center"}}><div style={{fontSize:64,marginBottom:20}}>{st.icon}</div><h3 style={{fontSize:22,fontWeight:800,color:C.text,margin:"0 0 12px"}}>{st.title}</h3><p style={{fontSize:14,color:C.textSec,lineHeight:1.6,marginBottom:32}}>{st.desc}</p><Btn onClick={()=>setStep(step+1)} full>{st.btn}</Btn><p style={{fontSize:11,color:C.textTer,marginTop:16}}>🔒 MetaLucky / CashBlock</p></div></div>;
+}
+
+function OnboardingSuccess({onNext}) {
+  return <div style={{display:"flex",flexDirection:"column",height:"100%",alignItems:"center",justifyContent:"center",padding:"0 32px",textAlign:"center"}}><div style={{fontSize:72,marginBottom:16}}>🎓</div><h2 style={{fontSize:26,fontWeight:800,color:C.text,margin:"0 0 8px"}}>¡Registro completo!</h2><p style={{fontSize:15,color:C.textSec,lineHeight:1.6,marginBottom:12}}>Cuenta verificada. Completa la formación para activarte.</p><div style={{background:C.wineLight,borderRadius:16,padding:20,width:"100%",marginBottom:32,textAlign:"left"}}><div style={{fontSize:13,fontWeight:700,color:C.wine,marginBottom:12}}>Tu camino:</div>{["Ruta 1: Fundamentos VIS","Ruta 2: Tu rol como Broker","Seleccionar hasta 2 proyectos","¡Comenzar a generar leads!"].map((t,i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"6px 0",color:C.text,fontSize:14}}><div style={{width:24,height:24,borderRadius:12,background:C.card,border:`2px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,color:C.textTer,flexShrink:0}}>{i+1}</div>{t}</div>))}</div><Btn onClick={onNext} full>Comenzar formación →</Btn></div>;
+}
+
+// ─── HOME ───
+function HomeScreen({setTab,leads}) {
+  const activeSugs=leads.filter(l=>SUGGESTIONS[l.status]).slice(0,3);
+  return (
+    <div style={{padding:"0 20px 24px"}}>
+      <div style={{padding:"16px 0 20px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+        <div><p style={{fontSize:14,color:C.textSec,margin:0}}>Hola, Broker 👋</p><h2 style={{fontSize:22,fontWeight:800,color:C.text,margin:"2px 0 0",letterSpacing:-0.5}}>Tu resumen</h2></div>
+        <div style={{display:"flex",alignItems:"center",gap:8}}>
+          <div style={{background:C.amberSoft,borderRadius:10,padding:"6px 10px",display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14}}>🔥</span><span style={{fontSize:13,fontWeight:800,color:C.amber}}>5</span></div>
+          <div style={{background:C.wineLight,borderRadius:10,padding:"6px 10px",display:"flex",alignItems:"center",gap:4}}><span style={{fontSize:14}}>⭐</span><span style={{fontSize:13,fontWeight:800,color:C.wine}}>320</span></div>
+        </div>
+      </div>
+
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10,marginBottom:20}}>
+        {[["4","Leads",C.blue],["1","Por cerrar",C.green],[fmt(750000),"Comisión est.",C.wine]].map(([v,l,c])=>(<div key={l} style={{background:C.card,borderRadius:16,padding:"16px 12px",textAlign:"center",border:`1px solid ${C.borderLight}`}}><div style={{fontSize:20,fontWeight:800,color:c,letterSpacing:-0.5}}>{v}</div><div style={{fontSize:10,color:C.textTer,marginTop:4,fontWeight:500}}>{l}</div></div>))}
+      </div>
+
+      {/* Quick actions */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:20}}>
+        <div onClick={()=>setTab("proyectos")} style={{background:C.wine,borderRadius:16,padding:20,cursor:"pointer"}}><span style={{fontSize:28}}>🏗️</span><div style={{color:"#fff",fontWeight:700,fontSize:14,marginTop:8}}>Mis Proyectos</div><div style={{color:"rgba(255,255,255,0.7)",fontSize:12,marginTop:2}}>Compartir y generar QR</div></div>
+        <div onClick={()=>setTab("academy")} style={{background:`linear-gradient(135deg,${C.amber},#F97316)`,borderRadius:16,padding:20,cursor:"pointer"}}><span style={{fontSize:28}}>📚</span><div style={{color:"#fff",fontWeight:700,fontSize:14,marginTop:8}}>Academy</div><div style={{color:"rgba(255,255,255,0.7)",fontSize:12,marginTop:2}}>6/11 completadas</div></div>
+      </div>
+
+      {/* Suggestions */}
+      <div style={{marginBottom:20}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><h3 style={{fontSize:16,fontWeight:700,color:C.text,margin:0}}>Acciones pendientes</h3><Badge small color={C.red}>{activeSugs.length}</Badge></div>
+        {activeSugs.map((lead,i)=>{
+          const sug=SUGGESTIONS[lead.status];const uc={red:{bg:"#FEF2F2",brd:"#FECACA",dot:C.red},amber:{bg:"#FFFBEB",brd:"#FDE68A",dot:C.amber},green:{bg:"#F0FDF4",brd:"#BBF7D0",dot:C.green}}[sug.urgency];
+          return (<div key={i} onClick={()=>setTab("leads")} style={{background:uc.bg,border:`1px solid ${uc.brd}`,borderRadius:16,padding:16,marginBottom:10,cursor:"pointer",position:"relative",overflow:"hidden"}}>
+            <div style={{position:"absolute",left:0,top:0,bottom:0,width:4,background:uc.dot,borderRadius:"0 4px 4px 0"}} />
+            <div style={{display:"flex",alignItems:"flex-start",gap:10,paddingLeft:8}}>
+              <span style={{fontSize:18,marginTop:1}}>{sug.icon}</span>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:C.text}}>{lead.name} — {sug.title}</div>
+                <div style={{fontSize:12,color:C.textSec,marginTop:3,lineHeight:1.4}}>{sug.msg.split(". ")[0]}.</div>
+                {lead.auto&&<Badge small color={C.blue} style={{marginTop:6}}>📱 Lead automático via QR</Badge>}
+                <div style={{display:"flex",gap:6,marginTop:10}}>
+                  <Btn variant="whatsapp" small style={{padding:"6px 12px",fontSize:11,borderRadius:10}}>📲 WhatsApp</Btn>
+                  <Btn variant="ghost" small style={{padding:"6px 12px",fontSize:11,borderRadius:10,background:"#fff"}}>⏰ Luego</Btn>
+                </div>
+              </div>
+            </div>
+          </div>);
+        })}
+      </div>
+
+      <div style={{background:C.card,borderRadius:16,padding:16,marginTop:16,border:`1px solid ${C.borderLight}`}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}><h4 style={{fontSize:14,fontWeight:700,color:C.text,margin:0}}>🏆 Ranking semanal</h4><span style={{fontSize:12,color:C.wine,fontWeight:600}}>Tu: #7</span></div>
+        {[["🥇","Valentina M.","1,240 XP"],["🥈","Andrés C.","980 XP"],["🥉","Sofía L.","870 XP"]].map(([m,n,x],i)=>(<div key={i} style={{display:"flex",alignItems:"center",gap:10,padding:"8px 0",borderTop:i>0?`1px solid ${C.borderLight}`:"none"}}><span style={{fontSize:18}}>{m}</span><span style={{flex:1,fontSize:13,fontWeight:600,color:C.text}}>{n}</span><span style={{fontSize:12,color:C.textSec,fontWeight:600}}>{x}</span></div>))}
+      </div>
+    </div>
+  );
+}
+
+// ─── ACADEMY ───
+function AcademyScreen() {
+  const [lesson,setLesson]=useState(null);const[qs,setQs]=useState({q:0,sel:null,score:0,done:false});
+  const quiz=[{q:"Un prospecto dice: 'No tengo para la cuota inicial.' ¿Qué respondes?",opts:["'Esto no es para ti'","'Con Mi Casa Ya puedes recibir subsidio que cubre parte de la cuota'","'Pregúntale a alguien'","'Eso es del banco'"],ans:1},
+    {q:"¿Cuál es el momento ideal para registrar un lead?",opts:["Cuando firmó documentos","Cuando muestra interés genuino en vivienda propia","Solo si tiene todo el dinero","Después de la visita"],ans:1},
+    {q:"Tu prospecto no contesta. ¿Qué haces?",opts:["Lo borras","Esperas","Le envías un WhatsApp amigable y breve","Lo reportas como perdido"],ans:2}];
+
+  const paths=[
+    {id:1,title:"Fundamentos VIS",icon:"🏠",color:C.wine,progress:4,total:4,lessons:[{t:"¿Qué es vivienda VIS?",d:true},{t:"Subsidios y beneficios",d:true},{t:"Crédito hipotecario básico",d:true},{t:"El proceso de compra",d:true}]},
+    {id:2,title:"Tu rol como Broker",icon:"🎯",color:C.red,progress:2,total:4,lessons:[{t:"Cómo identificar prospectos",d:true},{t:"El pitch perfecto",d:true},{t:"Manejo de objeciones",d:false},{t:"Registrar leads",d:false}]},
+    {id:3,title:"Proyecto: Villa del Sol",icon:"🌇",color:"#E8344E",progress:3,total:3,lessons:[{t:"Ubicación y entorno",d:true},{t:"Tipos de apto y precios",d:true},{t:"Financiación",d:true}]},
+    {id:4,title:"Proyecto: Parques de Bolívar",icon:"🏘️",color:"#3B82F6",progress:1,total:3,lessons:[{t:"Ubicación y entorno",d:true},{t:"Tipos de apto y precios",d:false},{t:"Financiación",d:false}]},
+  ];
+
+  if(lesson!==null){
+    if(qs.done){const p=qs.score>=2;return <div style={{padding:"20px 24px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",textAlign:"center"}}><div style={{fontSize:72,marginBottom:16}}>{p?"🎉":"💪"}</div><h3 style={{fontSize:22,fontWeight:800,color:C.text,margin:"0 0 4px"}}>{p?"¡Lección completada!":"Casi lo logras"}</h3><p style={{fontSize:14,color:C.textSec,marginBottom:8}}>{qs.score}/{quiz.length} correctas</p>{p&&<div style={{background:C.amberSoft,borderRadius:12,padding:"10px 20px",marginBottom:24}}>⭐ <span style={{fontSize:15,fontWeight:800,color:C.amber}}>+40 XP</span></div>}<Btn onClick={()=>{setLesson(null);setQs({q:0,sel:null,score:0,done:false});}} full>{p?"Continuar →":"Reintentar"}</Btn></div>;}
+    const q=quiz[qs.q];
+    return <div style={{padding:"20px 24px",display:"flex",flexDirection:"column",height:"100%"}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:16}}><span onClick={()=>{setLesson(null);setQs({q:0,sel:null,score:0,done:false});}} style={{fontSize:14,color:C.textSec,cursor:"pointer"}}>✕</span><Badge color={C.red}>❤️ ❤️ ❤️</Badge></div>
+      <div style={{height:6,borderRadius:3,background:C.border,marginBottom:24,overflow:"hidden"}}><div style={{width:`${((qs.q+1)/quiz.length)*100}%`,height:"100%",background:C.green,borderRadius:3,transition:"width 0.4s"}} /></div>
+      <div style={{background:C.wineLight,borderRadius:16,padding:20,marginBottom:20}}><p style={{fontSize:16,fontWeight:700,color:C.text,margin:0,lineHeight:1.5}}>{q.q}</p></div>
+      <div style={{flex:1,display:"flex",flexDirection:"column",gap:10}}>{q.opts.map((o,i)=><div key={i} onClick={()=>setQs({...qs,sel:i})} style={{padding:"14px 16px",borderRadius:14,cursor:"pointer",transition:"all 0.15s",background:qs.sel===i?C.wineLight:C.card,border:`2px solid ${qs.sel===i?C.wine:C.border}`,color:C.text,fontSize:14,fontWeight:qs.sel===i?600:400}}><span style={{display:"inline-flex",width:24,height:24,borderRadius:12,background:qs.sel===i?C.wine:C.border,color:qs.sel===i?"#fff":C.textTer,alignItems:"center",justifyContent:"center",fontSize:12,fontWeight:700,marginRight:10}}>{String.fromCharCode(65+i)}</span>{o}</div>)}</div>
+      <div style={{paddingTop:16,paddingBottom:8}}><Btn onClick={()=>{const ns=qs.sel===q.ans?qs.score+1:qs.score;if(qs.q<quiz.length-1)setQs({q:qs.q+1,sel:null,score:ns,done:false});else setQs({...qs,score:ns,done:true});}} disabled={qs.sel===null} full>{qs.q<quiz.length-1?"Verificar →":"Finalizar"}</Btn></div>
+    </div>;
+  }
+
+  return <div style={{padding:"0 20px 24px"}}>
+    <div style={{padding:"16px 0 20px"}}><h2 style={{fontSize:22,fontWeight:800,color:C.text,margin:"0 0 4px",letterSpacing:-0.5}}>Academy</h2><p style={{fontSize:14,color:C.textSec,margin:0}}>Completa tu formación</p></div>
+    <div style={{background:`linear-gradient(135deg,${C.wine},${C.red})`,borderRadius:20,padding:20,marginBottom:20,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{color:"rgba(255,255,255,0.8)",fontSize:12,fontWeight:600}}>Progreso total</div><div style={{color:"#fff",fontSize:28,fontWeight:800,marginTop:4}}>320 XP</div><div style={{color:"rgba(255,255,255,0.7)",fontSize:12,marginTop:4}}>🔥 Racha: 5 días</div></div><div style={{width:64,height:64,borderRadius:32,border:"4px solid rgba(255,255,255,0.3)",display:"flex",alignItems:"center",justifyContent:"center",color:"#fff",fontSize:18,fontWeight:800}}>10/14</div></div>
+    {paths.map(p=><div key={p.id} style={{background:C.card,borderRadius:20,marginBottom:14,border:`1px solid ${C.borderLight}`,overflow:"hidden"}}>
+      <div style={{padding:"16px 18px 12px",display:"flex",alignItems:"center",gap:14}}>
+        <div style={{width:48,height:48,borderRadius:16,background:`${p.color}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:24}}>{p.icon}</div>
+        <div style={{flex:1}}><div style={{display:"flex",alignItems:"center",gap:8}}><span style={{fontSize:15,fontWeight:700,color:C.text}}>{p.title}</span>{p.progress===p.total&&<span>✅</span>}</div><div style={{display:"flex",alignItems:"center",gap:8,marginTop:6}}><div style={{flex:1,height:6,borderRadius:3,background:C.border,overflow:"hidden"}}><div style={{width:`${(p.progress/p.total)*100}%`,height:"100%",borderRadius:3,background:p.color}} /></div><span style={{fontSize:11,color:C.textSec,fontWeight:600}}>{p.progress}/{p.total}</span></div></div>
+      </div>
+      <div style={{padding:"0 18px 14px"}}>{p.lessons.map((l,i)=><div key={i} onClick={()=>!l.d&&setLesson(i)} style={{display:"flex",alignItems:"center",gap:10,padding:"10px 0",borderTop:`1px solid ${C.borderLight}`,cursor:l.d?"default":"pointer"}}>
+        <div style={{width:28,height:28,borderRadius:14,background:l.d?C.greenSoft:C.cardAlt,border:`2px solid ${l.d?C.green:C.border}`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:12,color:l.d?C.green:C.textTer,flexShrink:0}}>{l.d?"✓":i+1}</div>
+        <span style={{fontSize:13,color:l.d?C.textSec:C.text,fontWeight:l.d?400:500,textDecoration:l.d?"line-through":"none"}}>{l.t}</span>
+        {!l.d&&<span style={{marginLeft:"auto",fontSize:12,color:p.color,fontWeight:700}}>+40 XP</span>}
+      </div>)}</div>
+    </div>)}
+  </div>;
+}
+
+// ─── PROYECTOS ───
+function ProyectosScreen({leads,setLeads,setTab}) {
+  const [detail,setDetail]=useState(null);
+  const [showQR,setShowQR]=useState(false);
+  const [showProspectView,setShowProspectView]=useState(false);
+  const [prospectForm,setProspectForm]=useState({name:"",phone:"",email:""});
+  const [leadCreated,setLeadCreated]=useState(false);
+  const [shareMsg,setShareMsg]=useState(false);
+
+  if(showProspectView){
+    const proj=PROJECTS.find(p=>p.id===detail);
+    if(leadCreated) return <div style={{padding:"20px 24px",display:"flex",flexDirection:"column",alignItems:"center",justifyContent:"center",height:"100%",textAlign:"center"}}>
+      <div style={{width:80,height:80,borderRadius:40,background:C.greenSoft,display:"flex",alignItems:"center",justifyContent:"center",fontSize:40,marginBottom:20}}>✅</div>
+      <h3 style={{fontSize:20,fontWeight:800,color:C.text,margin:"0 0 8px"}}>¡Lead registrado!</h3>
+      <p style={{fontSize:14,color:C.textSec,lineHeight:1.5,marginBottom:8}}>{prospectForm.name} se registró como prospecto para {proj.name}.</p>
+      <Badge color={C.blue}>📱 Lead automático</Badge>
+      <p style={{fontSize:13,color:C.textSec,marginTop:16,marginBottom:24}}>El lead ya aparece en tu lista. ¡Hazle seguimiento!</p>
+      <Btn onClick={()=>{setShowProspectView(false);setLeadCreated(false);setShowQR(false);setProspectForm({name:"",phone:"",email:""});}} full>Ver en mis leads →</Btn>
+    </div>;
+
+    return <div style={{display:"flex",flexDirection:"column",height:"100%",background:"#fff"}}>
+      <div style={{padding:"16px 20px",display:"flex",alignItems:"center",gap:8}}>
+        <span onClick={()=>{setShowProspectView(false);setProspectForm({name:"",phone:"",email:""});}} style={{fontSize:20,cursor:"pointer"}}>←</span>
+        <Badge color={C.blue}>Vista del prospecto (simulada)</Badge>
+      </div>
+      <div style={{flex:1,padding:"0 24px",overflowY:"auto"}}>
+        <div style={{background:`linear-gradient(135deg,${proj.color}15,${proj.color}08)`,borderRadius:20,padding:24,textAlign:"center",marginBottom:20,border:`1px solid ${proj.color}22`}}>
+          <div style={{fontSize:48,marginBottom:12}}>{proj.img}</div>
+          <h3 style={{fontSize:20,fontWeight:800,color:C.text,margin:"0 0 4px"}}>{proj.name}</h3>
+          <p style={{fontSize:13,color:C.textSec,margin:"0 0 8px"}}>📍 {proj.location}</p>
+          <Badge color={proj.color}>{proj.price}</Badge>
+          <div style={{display:"flex",justifyContent:"center",gap:16,marginTop:16}}>
+            <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.text}}>{proj.area}</div><div style={{fontSize:11,color:C.textTer}}>Área</div></div>
+            <div style={{textAlign:"center"}}><div style={{fontSize:14,fontWeight:700,color:C.text}}>{proj.rooms}</div><div style={{fontSize:11,color:C.textTer}}>Habitaciones</div></div>
+          </div>
+          <p style={{fontSize:12,color:C.green,fontWeight:600,marginTop:12}}>🏷️ Subsidio: {proj.subsidio}</p>
+        </div>
+        <h4 style={{fontSize:16,fontWeight:700,color:C.text,margin:"0 0 12px"}}>¿Te interesa? Déjanos tus datos</h4>
+        <Input label="Tu nombre" value={prospectForm.name} onChange={v=>setProspectForm({...prospectForm,name:v})} placeholder="Nombre completo" />
+        <Input label="Celular" value={prospectForm.phone} onChange={v=>setProspectForm({...prospectForm,phone:v})} placeholder="300 123 4567" type="tel" />
+        <Input label="Email" value={prospectForm.email} onChange={v=>setProspectForm({...prospectForm,email:v})} placeholder="correo@email.com" type="email" />
+      </div>
+      <div style={{padding:"16px 24px 32px"}}><Btn onClick={()=>{setLeads([{id:Date.now(),name:prospectForm.name,phone:prospectForm.phone,project:proj.name,status:"registrado",date:"Ahora",comision:800000,auto:true},...leads]);setLeadCreated(true);}} disabled={!prospectForm.name||!prospectForm.phone} full variant="success">¡Me interesa! →</Btn></div>
+    </div>;
+  }
+
+  if(detail!==null){
+    const proj=PROJECTS.find(p=>p.id===detail);
+    const canSell=proj.certified&&proj.selected;
+    return <div style={{padding:"0 20px 24px"}}>
+      <div style={{padding:"16px 0",display:"flex",alignItems:"center",gap:8}}><span onClick={()=>{setDetail(null);setShowQR(false);setShareMsg(false);}} style={{fontSize:20,cursor:"pointer"}}>←</span><h3 style={{fontSize:18,fontWeight:700,color:C.text,margin:0}}>Detalle del proyecto</h3></div>
+
+      {/* Hero */}
+      <div style={{background:`linear-gradient(135deg,${proj.color},${proj.color}CC)`,borderRadius:20,padding:24,marginBottom:16,position:"relative",overflow:"hidden"}}>
+        <div style={{position:"absolute",right:-20,top:-20,fontSize:80,opacity:0.15}}>{proj.img}</div>
+        <div style={{position:"relative"}}>
+          <div style={{display:"flex",gap:6,marginBottom:12}}>
+            <Badge color="#fff" bg="rgba(255,255,255,0.2)">{proj.type}</Badge>
+            {canSell&&<Badge color="#fff" bg="rgba(255,255,255,0.2)">✅ Certificado</Badge>}
+          </div>
+          <h3 style={{fontSize:24,fontWeight:800,color:"#fff",margin:"0 0 4px"}}>{proj.name}</h3>
+          <p style={{fontSize:13,color:"rgba(255,255,255,0.8)",margin:0}}>📍 {proj.location}</p>
+          <div style={{display:"flex",gap:16,marginTop:16}}>
+            {[[proj.area,"Área"],[proj.rooms,"Hab."],[proj.delivery,"Entrega"]].map(([v,l])=><div key={l}><div style={{fontSize:15,fontWeight:700,color:"#fff"}}>{v}</div><div style={{fontSize:11,color:"rgba(255,255,255,0.7)"}}>{l}</div></div>)}
+          </div>
+        </div>
+      </div>
+
+      {/* Price + Subsidio */}
+      <div style={{display:"grid",gridTemplateColumns:"1fr 1fr",gap:10,marginBottom:16}}>
+        <div style={{background:C.card,borderRadius:16,padding:16,border:`1px solid ${C.borderLight}`}}>
+          <div style={{fontSize:11,color:C.textTer,fontWeight:600}}>PRECIO</div>
+          <div style={{fontSize:18,fontWeight:800,color:C.text,marginTop:4}}>{proj.price}</div>
+        </div>
+        <div style={{background:C.greenSoft,borderRadius:16,padding:16}}>
+          <div style={{fontSize:11,color:C.green,fontWeight:600}}>SUBSIDIO</div>
+          <div style={{fontSize:14,fontWeight:800,color:C.green,marginTop:4}}>🏷️ {proj.subsidio}</div>
+        </div>
+      </div>
+
+      {/* Features */}
+      <div style={{background:C.card,borderRadius:16,padding:16,marginBottom:16,border:`1px solid ${C.borderLight}`}}>
+        <h4 style={{fontSize:14,fontWeight:700,color:C.text,margin:"0 0 10px"}}>Características</h4>
+        <div style={{display:"flex",flexWrap:"wrap",gap:6}}>{proj.features.map((f,i)=><Badge key={i} small color={C.textSec} bg={C.cardAlt}>{f}</Badge>)}</div>
+      </div>
+
+      {/* Financing */}
+      <div style={{background:C.card,borderRadius:16,padding:16,marginBottom:16,border:`1px solid ${C.borderLight}`}}>
+        <h4 style={{fontSize:14,fontWeight:700,color:C.text,margin:"0 0 8px"}}>💳 Financiación</h4>
+        <p style={{fontSize:13,color:C.textSec,lineHeight:1.5,margin:0}}>{proj.financing}</p>
+      </div>
+
+      {/* SHARE + QR SECTION */}
+      {canSell ? <>
+        <div style={{background:C.wine,borderRadius:20,padding:20,marginBottom:12}}>
+          <h4 style={{fontSize:15,fontWeight:700,color:"#fff",margin:"0 0 4px"}}>📤 Comparte con tu red</h4>
+          <p style={{fontSize:12,color:"rgba(255,255,255,0.7)",margin:"0 0 16px"}}>Envía este proyecto por WhatsApp o genera un QR para que tus prospectos se registren automáticamente.</p>
+          <div style={{display:"flex",gap:8}}>
+            <Btn variant="whatsapp" small full style={{borderRadius:12}} onClick={()=>setShareMsg(true)}>📲 WhatsApp</Btn>
+            <Btn small full style={{borderRadius:12,background:"rgba(255,255,255,0.15)",color:"#fff"}} onClick={()=>setShowQR(!showQR)}>📱 {showQR?"Ocultar":"Generar"} QR</Btn>
+          </div>
+        </div>
+
+        {shareMsg&&<div style={{background:C.card,borderRadius:16,padding:16,marginBottom:12,border:`2px solid #25D366`}}>
+          <div style={{fontSize:12,fontWeight:700,color:"#25D366",marginBottom:8}}>📲 Mensaje para WhatsApp</div>
+          <div style={{background:C.cardAlt,borderRadius:12,padding:14,borderLeft:`3px solid #25D366`}}>
+            <p style={{fontSize:13,color:C.text,margin:0,lineHeight:1.5}}>¡Hola! 🏠 Te cuento sobre una oportunidad increíble de vivienda propia. El proyecto <strong>{proj.name}</strong> en {proj.location} tiene apartamentos {proj.price} con subsidio <strong>{proj.subsidio}</strong>. ¡Tu sueño de casa propia está más cerca de lo que crees! 🔗 Regístrate aquí: broker.colpatria.com/r/BRK-{proj.id}</p>
+          </div>
+          <p style={{fontSize:11,color:C.textTer,margin:"8px 0 0"}}>El link incluye tu código de broker. Cuando alguien se registre, el lead aparece automáticamente en tu app.</p>
+        </div>}
+
+        {showQR&&<div style={{background:C.card,borderRadius:16,padding:20,marginBottom:12,border:`1px solid ${C.borderLight}`,textAlign:"center"}}>
+          <QRGrid seed={proj.id} />
+          <div style={{fontSize:13,fontWeight:700,color:C.text,marginTop:12}}>BRK-{String(proj.id).padStart(3,"0")}-COL</div>
+          <p style={{fontSize:12,color:C.textSec,marginTop:4}}>QR único: Broker + {proj.name}</p>
+          <p style={{fontSize:11,color:C.textTer,lineHeight:1.4,marginTop:8}}>Cuando tu prospecto escanee este código, verá la info del proyecto y podrá registrarse. El lead aparecerá automáticamente en tu app.</p>
+          <div style={{marginTop:12}}><Btn variant="ghost" small onClick={()=>setShowProspectView(true)} style={{borderRadius:12}}>👁️ Simular escaneo del prospecto</Btn></div>
+        </div>}
+
+        <Btn variant="outline" full style={{marginTop:4}} onClick={()=>{setDetail(null);setTab("leads");}}>+ Registrar lead manualmente</Btn>
+      </> :
+        <div style={{background:C.amberSoft,borderRadius:16,padding:20,textAlign:"center"}}>
+          <span style={{fontSize:28}}>🔒</span>
+          <p style={{fontSize:14,fontWeight:700,color:C.amber,margin:"8px 0 4px"}}>{proj.selected?"Completa tu certificación":"Selecciona este proyecto"}</p>
+          <p style={{fontSize:12,color:C.textSec,margin:0}}>Necesitas completar la formación específica de este proyecto para poder comercializarlo.</p>
+        </div>
+      }
+    </div>;
+  }
+
+  return <div style={{padding:"0 20px 24px"}}>
+    <div style={{padding:"16px 0 20px"}}><h2 style={{fontSize:22,fontWeight:800,color:C.text,margin:"0 0 4px",letterSpacing:-0.5}}>Proyectos</h2><p style={{fontSize:14,color:C.textSec,margin:0}}>Tus proyectos VIS para comercializar</p></div>
+
+    {/* My active projects */}
+    <div style={{marginBottom:20}}>
+      <h3 style={{fontSize:14,fontWeight:700,color:C.text,margin:"0 0 12px"}}>🟢 Mis proyectos activos <Badge small color={C.green}>2/2</Badge></h3>
+      {PROJECTS.filter(p=>p.selected).map(p=><div key={p.id} onClick={()=>setDetail(p.id)} style={{background:C.card,borderRadius:16,padding:16,marginBottom:10,border:`1px solid ${C.borderLight}`,cursor:"pointer",display:"flex",alignItems:"center",gap:14}}>
+        <div style={{width:52,height:52,borderRadius:16,background:`${p.color}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>{p.img}</div>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",alignItems:"center",gap:6}}><span style={{fontSize:15,fontWeight:700,color:C.text}}>{p.name}</span>{p.certified&&<span style={{fontSize:12}}>✅</span>}</div>
+          <div style={{fontSize:12,color:C.textSec,marginTop:2}}>{p.location} · {p.price}</div>
+          <div style={{display:"flex",gap:4,marginTop:6}}>
+            <Badge small color={p.color}>{p.type}</Badge>
+            <Badge small color={C.green}>Certificado</Badge>
+          </div>
+        </div>
+        <span style={{fontSize:16,color:C.textTer}}>→</span>
+      </div>)}
+    </div>
+
+    {/* Available projects */}
+    <div>
+      <h3 style={{fontSize:14,fontWeight:700,color:C.text,margin:"0 0 12px"}}>📋 Otros proyectos disponibles</h3>
+      {PROJECTS.filter(p=>!p.selected).map(p=><div key={p.id} onClick={()=>setDetail(p.id)} style={{background:C.card,borderRadius:16,padding:16,marginBottom:10,border:`1px solid ${C.borderLight}`,cursor:"pointer",display:"flex",alignItems:"center",gap:14,opacity:0.75}}>
+        <div style={{width:52,height:52,borderRadius:16,background:`${p.color}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:28,flexShrink:0}}>{p.img}</div>
+        <div style={{flex:1}}>
+          <div style={{fontSize:15,fontWeight:700,color:C.text}}>{p.name}</div>
+          <div style={{fontSize:12,color:C.textSec,marginTop:2}}>{p.location} · {p.price}</div>
+          <Badge small color={C.amber} style={{marginTop:6}}>🔒 Requiere certificación</Badge>
+        </div>
+        <span style={{fontSize:16,color:C.textTer}}>→</span>
+      </div>)}
+      <p style={{fontSize:12,color:C.textTer,textAlign:"center",marginTop:8}}>Para activar más proyectos, completa tu formación en Academy y libera un espacio (máx. 2).</p>
+    </div>
+  </div>;
+}
+
+// ─── LEADS ───
+function LeadsScreen({leads,setTab}) {
+  const [sel,setSel]=useState(null);
+  const [showNew,setShowNew]=useState(false);
+  const [nf,setNf]=useState({name:"",phone:"",project:""});
+  const pipeline=["registrado","contactado","visita_agendada","visita_realizada","documentos","credito_tramite","credito_aprobado","cerrado"];
+
+  if(sel!==null){
+    const lead=leads[sel];const cfg=STATUS_MAP[lead.status];const sug=SUGGESTIONS[lead.status];const stepIdx=cfg.step;
+    return <div style={{padding:"0 20px 24px"}}>
+      <div style={{padding:"16px 0",display:"flex",alignItems:"center",gap:8}}><span onClick={()=>setSel(null)} style={{fontSize:20,cursor:"pointer"}}>←</span><h3 style={{fontSize:18,fontWeight:700,color:C.text,margin:0}}>Detalle del lead</h3></div>
+      <div style={{background:C.card,borderRadius:20,padding:20,border:`1px solid ${C.borderLight}`,marginBottom:16}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div><h4 style={{fontSize:20,fontWeight:800,color:C.text,margin:"0 0 4px"}}>{lead.name}</h4><p style={{fontSize:13,color:C.textSec,margin:"0 0 4px"}}>📍 {lead.project} · {lead.date}</p>{lead.auto&&<Badge small color={C.blue}>📱 Lead automático via QR</Badge>}</div>
+          <Badge color={cfg.color} bg={cfg.bg}>{cfg.label}</Badge>
+        </div>
+        <div style={{display:"flex",gap:8,marginTop:12}}><Btn variant="whatsapp" small style={{fontSize:12,padding:"8px 14px",borderRadius:10}}>📲 WhatsApp</Btn><Btn variant="ghost" small style={{fontSize:12,padding:"8px 14px",borderRadius:10}}>📞 Llamar</Btn></div>
+      </div>
+      <div style={{background:C.card,borderRadius:20,padding:20,border:`1px solid ${C.borderLight}`,marginBottom:16}}>
+        <h4 style={{fontSize:14,fontWeight:700,color:C.text,margin:"0 0 16px"}}>Progreso</h4>
+        {pipeline.slice(0,5).map((st,i)=>{const done=i<=stepIdx;const cur=i===stepIdx;return <div key={st} style={{display:"flex",alignItems:"flex-start",gap:12}}><div style={{display:"flex",flexDirection:"column",alignItems:"center"}}><div style={{width:24,height:24,borderRadius:12,background:done?C.green:C.border,display:"flex",alignItems:"center",justifyContent:"center",fontSize:10,color:done?"#fff":C.textTer,fontWeight:700,flexShrink:0,border:cur?`3px solid ${C.wine}`:"none"}}>{done&&i<stepIdx?"✓":i+1}</div>{i<4&&<div style={{width:2,height:24,background:done?C.green:C.border}} />}</div><div style={{paddingBottom:8}}><span style={{fontSize:13,fontWeight:cur?700:400,color:cur?C.text:C.textSec}}>{STATUS_MAP[st].label}</span></div></div>;})}
+      </div>
+      {sug&&<div style={{background:C.card,borderRadius:20,padding:20,border:`2px solid ${C.wine}22`,marginBottom:16}}>
+        <div style={{display:"flex",alignItems:"center",gap:8,marginBottom:12}}><span style={{fontSize:18}}>💡</span><h4 style={{fontSize:14,fontWeight:700,color:C.wine,margin:0}}>Próximo paso sugerido</h4></div>
+        <p style={{fontSize:13,color:C.textSec,lineHeight:1.5,margin:"0 0 14px"}}>{lead.name} {sug.msg}</p>
+        <div style={{background:C.cardAlt,borderRadius:14,padding:14,marginBottom:14,borderLeft:`3px solid ${C.wine}`}}>
+          <p style={{fontSize:11,color:C.textTer,margin:"0 0 4px",fontWeight:600}}>MENSAJE SUGERIDO</p>
+          <p style={{fontSize:13,color:C.text,margin:0,lineHeight:1.5}}>"{sug.wa.replace("{name}",lead.name.split(" ")[0]).replace("{broker}","Broker").replace("{project}",lead.project).replace("{sub}","Mi Casa Ya").replace("{date}",lead.nextVisit||"pronto")}"</p>
+        </div>
+        <div style={{display:"flex",gap:8}}><Btn variant="whatsapp" small full style={{borderRadius:12,fontSize:13}}>📲 Enviar por WhatsApp</Btn><Btn variant="ghost" small style={{borderRadius:12,fontSize:13}}>✏️ Editar</Btn></div>
+      </div>}
+      <div style={{background:C.greenSoft,borderRadius:16,padding:16,display:"flex",justifyContent:"space-between",alignItems:"center"}}><div><div style={{fontSize:12,color:C.green,fontWeight:600}}>Comisión estimada</div><div style={{fontSize:20,fontWeight:800,color:C.green}}>{fmt(lead.comision)}</div></div><span style={{fontSize:28}}>💰</span></div>
+    </div>;
+  }
+
+  if(showNew) return <div style={{padding:"0 20px 24px"}}>
+    <div style={{padding:"16px 0",display:"flex",alignItems:"center",gap:8}}><span onClick={()=>setShowNew(false)} style={{fontSize:20,cursor:"pointer"}}>←</span><h3 style={{fontSize:18,fontWeight:700,color:C.text,margin:0}}>Registrar lead</h3></div>
+    <div style={{background:C.card,borderRadius:20,padding:24,border:`1px solid ${C.borderLight}`}}>
+      <Input label="Nombre" value={nf.name} onChange={v=>setNf({...nf,name:v})} placeholder="Nombre completo" />
+      <Input label="Celular" value={nf.phone} onChange={v=>setNf({...nf,phone:v})} placeholder="300 123 4567" type="tel" />
+      <div style={{marginBottom:16}}><label style={{display:"block",color:C.textSec,fontSize:12,fontWeight:600,marginBottom:6,textTransform:"uppercase",letterSpacing:0.8}}>Proyecto</label>
+        {PROJECTS.filter(p=>p.selected).map(p=><div key={p.id} onClick={()=>setNf({...nf,project:p.name})} style={{padding:"12px 16px",borderRadius:12,border:`2px solid ${nf.project===p.name?C.wine:C.border}`,background:nf.project===p.name?C.wineLight:C.card,cursor:"pointer",display:"flex",alignItems:"center",gap:10,marginBottom:8}}>
+          <span style={{fontSize:20}}>{p.img}</span><div><div style={{fontSize:14,fontWeight:600,color:C.text}}>{p.name}</div><div style={{fontSize:12,color:C.textSec}}>{p.location}</div></div>
+        </div>)}
+      </div>
+      <Btn onClick={()=>setShowNew(false)} disabled={!nf.name||!nf.phone||!nf.project} full>Registrar lead →</Btn>
+    </div>
+  </div>;
+
+  return <div style={{padding:"0 20px 24px"}}>
+    <div style={{padding:"16px 0 12px",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div><h2 style={{fontSize:22,fontWeight:800,color:C.text,margin:0,letterSpacing:-0.5}}>Mis Leads</h2><p style={{fontSize:13,color:C.textSec,margin:"2px 0 0"}}>{leads.length} prospectos</p></div>
+      <Btn onClick={()=>setShowNew(true)} small style={{borderRadius:12}}>+ Nuevo</Btn>
+    </div>
+    <div style={{display:"flex",gap:6,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
+      {[["Nuevos",leads.filter(l=>l.status==="registrado").length,C.textSec],["Contactados",leads.filter(l=>l.status==="contactado").length,C.blue],["Visitas",leads.filter(l=>l.status==="visita_agendada").length,C.amber],["Crédito",leads.filter(l=>l.status==="credito_aprobado").length,C.green]].map(([l,n,c])=><div key={l} style={{background:C.card,borderRadius:12,padding:"8px 14px",border:`1px solid ${C.borderLight}`,textAlign:"center",minWidth:75}}><div style={{fontSize:18,fontWeight:800,color:c}}>{n}</div><div style={{fontSize:10,color:C.textTer}}>{l}</div></div>)}
+    </div>
+    {leads.map((lead,i)=>{const cfg=STATUS_MAP[lead.status];const sug=SUGGESTIONS[lead.status];
+      return <div key={i} onClick={()=>setSel(i)} style={{background:C.card,borderRadius:16,padding:16,marginBottom:10,border:`1px solid ${C.borderLight}`,cursor:"pointer"}}>
+        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start"}}>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <div style={{width:40,height:40,borderRadius:20,background:`${cfg.color}12`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:18,fontWeight:700,color:cfg.color}}>{lead.name.charAt(0)}</div>
+            <div><div style={{fontSize:14,fontWeight:700,color:C.text}}>{lead.name}</div><div style={{fontSize:12,color:C.textSec}}>{lead.project} · {lead.date}</div></div>
+          </div>
+          <Badge small color={cfg.color} bg={cfg.bg}>{cfg.label}</Badge>
+        </div>
+        {(sug||lead.auto)&&<div style={{marginTop:10,padding:"8px 12px",borderRadius:10,background:C.cardAlt,display:"flex",alignItems:"center",gap:6}}>
+          {sug&&<><span style={{fontSize:12}}>{sug.icon}</span><span style={{fontSize:11,color:C.textSec}}>{sug.title}</span></>}
+          {lead.auto&&<Badge small color={C.blue} style={{marginLeft:"auto"}}>📱 Auto</Badge>}
+          <span style={{marginLeft:lead.auto?"0":"auto",fontSize:12}}>→</span>
+        </div>}
+      </div>;
+    })}
+  </div>;
+}
+
+// ─── PERFIL ───
+function PerfilScreen() {
+  const [showComisiones,setShowComisiones]=useState(false);
+  if(showComisiones) return <div style={{padding:"0 20px 24px"}}>
+    <div style={{padding:"16px 0",display:"flex",alignItems:"center",gap:8}}><span onClick={()=>setShowComisiones(false)} style={{fontSize:20,cursor:"pointer"}}>←</span><h3 style={{fontSize:18,fontWeight:700,color:C.text,margin:0}}>Comisiones</h3></div>
+    <div style={{background:`linear-gradient(135deg,${C.wine},${C.red})`,borderRadius:20,padding:24,marginBottom:20}}>
+      <div style={{color:"rgba(255,255,255,0.7)",fontSize:12,fontWeight:600}}>Total estimado</div>
+      <div style={{color:"#fff",fontSize:32,fontWeight:800,marginTop:4}}>{fmt(1550000)}</div>
+      <div style={{display:"flex",gap:16,marginTop:16}}>
+        {[["En retención",fmt(750000)],["Pendientes",fmt(800000)],["Pagadas",fmt(0)]].map(([l,v])=><div key={l}><div style={{color:"rgba(255,255,255,0.6)",fontSize:11}}>{l}</div><div style={{color:"#fff",fontSize:16,fontWeight:700}}>{v}</div></div>)}
+      </div>
+    </div>
+    {[{n:"Ana Ruiz",p:"Parques de Bolívar",a:750000,st:"retention",d:45,t:120},{n:"María González",p:"Villa del Sol",a:800000,st:"pending",d:0,t:120}].map((d,i)=><div key={i} style={{background:C.card,borderRadius:16,padding:18,marginBottom:12,border:`1px solid ${C.borderLight}`}}>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",marginBottom:12}}><div><div style={{fontSize:15,fontWeight:700,color:C.text}}>{d.n}</div><div style={{fontSize:12,color:C.textSec,marginTop:2}}>{d.p}</div></div><Badge small color={d.st==="retention"?C.amber:C.blue}>{d.st==="retention"?"En retención":"En proceso"}</Badge></div>
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:8}}><span style={{fontSize:20,fontWeight:800,color:C.wine}}>{fmt(d.a)}</span>{d.st==="retention"&&<span style={{fontSize:12,color:C.textSec}}>{d.d}/{d.t} días</span>}</div>
+      {d.st==="retention"&&<div style={{height:6,borderRadius:3,background:C.border,overflow:"hidden"}}><div style={{width:`${(d.d/d.t)*100}%`,height:"100%",borderRadius:3,background:C.amber}} /></div>}
+    </div>)}
+    <div style={{background:C.blueSoft,borderRadius:16,padding:16,marginTop:8}}><div style={{fontSize:13,fontWeight:700,color:C.blue,marginBottom:4}}>ℹ️ ¿Cómo funciona?</div><p style={{fontSize:12,color:C.text,lineHeight:1.5,margin:0}}>La comisión se genera al aprobarse el crédito. Se aplica retención de 120 días para garantizar la venta.</p></div>
+  </div>;
+
+  return <div style={{padding:"0 20px 24px"}}>
+    <div style={{padding:"16px 0 20px",textAlign:"center"}}>
+      <div style={{width:72,height:72,borderRadius:36,background:`linear-gradient(135deg,${C.wine},${C.red})`,display:"flex",alignItems:"center",justifyContent:"center",fontSize:32,color:"#fff",fontWeight:800,margin:"0 auto 12px"}}>B</div>
+      <h3 style={{fontSize:20,fontWeight:800,color:C.text,margin:"0 0 2px"}}>Broker Demo</h3>
+      <p style={{fontSize:13,color:C.textSec,margin:0}}>Universidad de los Andes · 6to semestre</p>
+      <div style={{display:"flex",gap:8,justifyContent:"center",marginTop:12}}><Badge color={C.green}>✅ KYC Verificado</Badge><Badge color={C.wine}>🎓 En formación</Badge></div>
+    </div>
+
+    <div onClick={()=>setShowComisiones(true)} style={{background:`linear-gradient(135deg,${C.wine},${C.red})`,borderRadius:16,padding:18,marginBottom:16,cursor:"pointer",display:"flex",justifyContent:"space-between",alignItems:"center"}}>
+      <div><div style={{color:"rgba(255,255,255,0.7)",fontSize:12}}>Mis comisiones</div><div style={{color:"#fff",fontSize:22,fontWeight:800}}>{fmt(1550000)}</div></div>
+      <span style={{color:"#fff",fontSize:20}}>→</span>
+    </div>
+
+    <div style={{background:C.card,borderRadius:16,padding:16,marginBottom:12,border:`1px solid ${C.borderLight}`}}>
+      <h4 style={{fontSize:14,fontWeight:700,color:C.text,margin:"0 0 12px"}}>Estadísticas</h4>
+      {[["🏆 Ranking","#7 de 124"],["⭐ XP","320"],["🔥 Racha","5 días"],["👥 Leads","4"],["🎓 Lecciones","10/14"],["🏗️ Proyectos activos","2/2"]].map(([l,v],i)=><div key={i} style={{display:"flex",justifyContent:"space-between",padding:"10px 0",borderTop:i>0?`1px solid ${C.borderLight}`:"none"}}><span style={{fontSize:13,color:C.textSec}}>{l}</span><span style={{fontSize:13,fontWeight:700,color:C.text}}>{v}</span></div>)}
+    </div>
+    <Btn variant="outline" full style={{marginTop:8}}>Cerrar sesión</Btn>
+  </div>;
+}
+
+// ─── MAIN ───
+function App() {
+  const [screen,setScreen]=useState("welcome");
+  const [tab,setTab]=useState("home");
+  const [leads,setLeads]=useState(MOCK_LEADS);
+
+  const onb = {welcome:<OnboardingWelcome onNext={()=>setScreen("register")} />,register:<OnboardingRegister onNext={()=>setScreen("kyc")} />,kyc:<OnboardingKYC onNext={()=>setScreen("success")} />,success:<OnboardingSuccess onNext={()=>setScreen("app")} />};
+  const tabs = {home:<HomeScreen setTab={setTab} leads={leads} />,academy:<AcademyScreen />,proyectos:<ProyectosScreen leads={leads} setLeads={setLeads} setTab={setTab} />,leads:<LeadsScreen leads={leads} setTab={setTab} />,perfil:<PerfilScreen />};
+  const isOnb=screen!=="app";
+
+  return (
+    <div style={{minHeight:"100vh",background:"#E8E4DF",display:"flex",alignItems:"center",justifyContent:"center",fontFamily:"'DM Sans','Nunito',-apple-system,sans-serif",padding:"20px 0"}}>
+      <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
+      <div style={{width:390,maxWidth:"100vw",height:844,maxHeight:"100vh",borderRadius:44,background:C.bg,position:"relative",overflow:"hidden",boxShadow:`0 0 0 8px #1a1a2e,${C.shadowLg}`,display:"flex",flexDirection:"column"}}>
+        <div style={{position:"absolute",top:0,left:"50%",transform:"translateX(-50%)",width:160,height:34,background:"#1a1a2e",borderRadius:"0 0 20px 20px",zIndex:50}} />
+        <div style={{height:50,display:"flex",alignItems:"flex-end",justifyContent:"center",paddingBottom:4,fontSize:13,fontWeight:600,color:C.text,flexShrink:0}}>9:41</div>
+        <div style={{flex:1,overflowY:"auto",overflowX:"hidden"}}>{isOnb?onb[screen]:tabs[tab]}</div>
+        {!isOnb&&<div style={{height:72,background:C.card,borderTop:`1px solid ${C.border}`,display:"flex",alignItems:"center",justifyContent:"space-around",flexShrink:0,paddingBottom:8}}>
+          <NavItem icon="🏠" label="Home" active={tab==="home"} onClick={()=>setTab("home")} />
+          <NavItem icon="📚" label="Academy" active={tab==="academy"} onClick={()=>setTab("academy")} />
+          <NavItem icon="🏗️" label="Proyectos" active={tab==="proyectos"} onClick={()=>setTab("proyectos")} />
+          <NavItem icon="👥" label="Leads" active={tab==="leads"} onClick={()=>setTab("leads")} badge={leads.filter(l=>l.status==="registrado").length||null} />
+          <NavItem icon="👤" label="Perfil" active={tab==="perfil"} onClick={()=>setTab("perfil")} />
+        </div>}
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.render(React.createElement(App), document.getElementById("root"));
+</script>
+</body>
+</html>
