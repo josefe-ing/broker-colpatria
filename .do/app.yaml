@@ -2,6 +2,10 @@ name: broker-colpatria
 region: nyc
 static_sites:
   - name: broker-app
+    github:
+      repo: josefe-ing/broker-colpatria
+      branch: main
+      deploy_on_push: true
     source_dir: /
     index_document: index.html
     error_document: index.html
